@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use File::Find;
+use File::Basename;
 use MP3::Tag;
 use Encode qw( encode decode );
 
@@ -7,12 +8,12 @@ my $share = "/mnt/array1/pub";
 my $folder = "music";
 my $toc = "atrontc.vtc";
 
+@types = qw(.mp3 .m3u .wma .wav);
 %songs = ( );
 
 sub find_music {
     # parse file name
-    my $path = decode('utf-8', $_);
-    my($dir, $file, $ext) = ($path =~ m"^(.*/)(.*)(\.mp3|\.m3u|\.wma|\.wav)$");
+    my($file, $dir, $ext) = fileparse(decode('utf-8', $_), @types);
     return if $ext eq '';
 
     # create a new song
@@ -33,13 +34,13 @@ sub find_music {
         $songs{$key}{TIT2} = $tags->title() || $file;
 
         # get album name
-        $songs{$key}{TALB} = $tags->album();
+        $songs{$key}{TALB} = $tags->album() . ' (' . $tags->year() . ')';
 
         # use first genre
         $songs{$key}{TCON} = (split(/;/, $tags->genre()))[0];
 
         # combine disc with track number to ensure proper order on AT
-        $songs{$key}{TRCK} = (split(/\//, $tags->get_frame('TPOS')))[0] . sprintf('%02d', (split(/\//, $tags->track()))[0]);
+        $songs{$key}{TRCK} = sprintf('%s%02d', (split(/\//, $tags->get_frame('TPOS')))[0], (split(/\//, $tags->track()))[0]);
 
         # select the most representative artist for the track
         my $artists = $tags->get_frame('TPE2') . ';' . $tags->get_frame('TPE1');
@@ -90,6 +91,7 @@ sub gen_toc {
 # look for changed files
 chdir $share;
 if ((! -e $toc) || `find $folder -newer $toc|wc -l` + 0) {
+    fileparse_set_fstype('MSWin32');
     find({ wanted=>\&find_music, no_chdir=>1 }, $folder);
     gen_toc();
 }
