@@ -4,24 +4,26 @@ use File::Basename;
 use MP3::Tag;
 use Encode qw( encode decode );
 
-my $share = "/mnt/array1/pub";
-my $folder = "music";
-my $toc = "atrontc.vtc";
+my $share = '/mnt/array1/pub';
+my $folder = 'music';
+my $toc = 'atrontc.vtc';
 
 @types = qw(.mp3 .m3u .wma .wav);
 %songs = ( );
 
+# add track information to collection
 sub find_music {
     # parse file name
     my($file, $dir, $ext) = fileparse(decode('utf-8', $_), @types);
     return if $ext eq '';
 
     # create a new song
-    $dir =~ tr/\//\\/;
     my $key = $file . $ext . $dir;
 
+    $dir =~ tr/\//\\/;
     $songs{$key}{DIR} = $dir;
     $songs{$key}{FILE} = $file . $ext;
+    $ext = lc $ext;
 
     # generate MP3::Tag entry
     if ($ext eq '.mp3' ) {
@@ -40,7 +42,8 @@ sub find_music {
         $songs{$key}{TCON} = (split(/;/, $tags->genre()))[0];
 
         # combine disc with track number to ensure proper order on AT
-        $songs{$key}{TRCK} = sprintf('%s%02d', (split(/\//, $tags->get_frame('TPOS')))[0], (split(/\//, $tags->track()))[0]);
+        $disc = $tags->get_frame('TPOS');
+        $songs{$key}{TRCK} = sprintf('%d%02d', $disc, $tags->track());
 
         # select the most representative artist for the track
         my $artists = $tags->get_frame('TPE2') . ';' . $tags->get_frame('TPE1');
@@ -71,7 +74,8 @@ sub find_music {
     }
 }
 
-sub gen_toc {
+# generate sorted TOC file
+sub gen_toc() {
     open(TOC, '>:encoding(cp1252)', $toc)
       || die "Can't open TOC for writing: $!";
 
@@ -91,7 +95,9 @@ sub gen_toc {
 # look for changed files
 chdir $share;
 if ((! -e $toc) || `find $folder -newer $toc|wc -l` + 0) {
+    $time = time;
     fileparse_set_fstype('MSWin32');
     find({ wanted=>\&find_music, no_chdir=>1 }, $folder);
     gen_toc();
+    utime $time, $time, $toc;
 }
