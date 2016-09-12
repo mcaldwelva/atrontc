@@ -4,10 +4,16 @@ use File::Basename;
 use MP3::Tag;
 use Encode qw( encode decode );
 
+# file share root & music folder
 my $share = '/mnt/array1/pub';
 my $folder = 'music';
-my $toc = 'atrontc.vtc';
 
+# AudioTron login
+my $host = 'atron';
+my $user = 'admin';
+my $pass = 'admin';
+
+my $toc = 'atrontc.vtc';
 @types = qw(.mp3 .m3u .wma .wav);
 %songs = ( );
 
@@ -59,17 +65,17 @@ sub find_music {
     }
 
     # generate Audio::WMA entry
-    if ($ext eq '.wma' ) {
+    elsif ($ext eq '.wma' ) {
         $songs{$key}{TIT2} = $file;
     }
 
     # generate Audio::Wav entry
-    if ($ext eq '.wav' ) {
+    elsif ($ext eq '.wav' ) {
         $songs{$key}{TIT2} = $file;
     }
 
     # generate M3U entry
-    if ($ext eq '.m3u' ) {
+    elsif ($ext eq '.m3u' ) {
         $songs{$key}{TIT2} = $file;
     }
 }
@@ -100,4 +106,7 @@ if ((! -e $toc) || `find $folder -newer $toc|wc -l` + 0) {
     find({ wanted=>\&find_music, no_chdir=>1 }, $folder);
     gen_toc();
     utime $time, $time, $toc;
+
+    # update AudioTron
+    `wget http://${host}/goform/CheckNewFilesForm --user=${user} --password=${pass} --quiet`
 }
