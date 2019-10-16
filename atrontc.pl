@@ -72,16 +72,16 @@ sub readId3Tags {
     my $header_end = tell($fh) + readId3Int($fh, 7, 4);
 
     # search through tags
+    my $tag_size;
     do {
         my $tag;
-        my $tag_size;
 
         if ($ver >= 3) {
             # get id
             read($fh, $tag, 4);
 
             # get size
-            $tag_size = readId3Int($fh, 8, 4);
+            $tag_size = ($ver > 3) ? readId3Int($fh, 7, 4) : readId3Int($fh, 8, 4);
 
             # skip flags
             read($fh, $data, 2);
@@ -115,7 +115,7 @@ sub readId3Tags {
         } else {
             seek($fh, tell($fh) + $tag_size, SEEK_SET);
         }
-    } while ($tag_size ne 0 && tell($fh) < $header_end);
+    } while ($tag_size != 0 && tell($fh) < $header_end);
 
     close ($fh);
     return %tags;
@@ -263,7 +263,7 @@ sub find_music {
 
     # combine album title with year as uniquifier
     $songs{$key}{TALB} = $tags{Album};
-    $songs{$key}{TALB} .= ' (' . $tags{Year} . ')' if ($tags{Year} ne ''&& $tags{Album} ne '');
+    $songs{$key}{TALB} .= ' (' . $tags{Year} . ')' if ($tags{Year} ne '' && $tags{Album} ne '');
 
     # use first genre
     $songs{$key}{TCON} = (split(/;/, $tags{Genre}))[0];
