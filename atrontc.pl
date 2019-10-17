@@ -84,7 +84,7 @@ sub readId3Tags {
             $tag_size = readId3Int($fh, ($ver > 3) ? 7 : 8, 4);
 
             # skip flags
-            read($fh, $data, 2);
+            seek($fh, tell($fh) + 2, SEEK_SET);
         } else {
             # get id
             read($rh, $tag, 3);

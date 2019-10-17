@@ -1,5 +1,5 @@
 # atrontc
-This is an AudioTron TOC file generator. It is intended to solve two problems: 1) it allows the AT to discover music as fast as possible and 2) it bypasses the limited indexing capabilities of the AT
+This is an AudioTron TOC file generator. It is intended to solve two problems: 1) allow the AT to discover music as fast as possible and 2) bypass the limited indexing capabilities of the AT
 
 ## Usage
 * This script has minimal dependencies and is likely to run wherever you have Perl 5.
