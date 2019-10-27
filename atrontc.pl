@@ -37,12 +37,12 @@ sub readId3Str {
 
 # read ID3 integer
 sub readId3Int {
-    my ($fh, $size, $count) = @_;
+    my ($fh, $width, $count) = @_;
     my $ret = 0;
 
     for (my $i = 0; $i < $count; $i++) {
         read($fh, my $c, 1);
-        $ret = ($ret << $size) | unpack('C', $c);
+        $ret = ($ret << $width) | unpack('C', $c);
     }
 
     return $ret;
@@ -66,7 +66,7 @@ sub readId3Tags {
     my $ver = unpack('C', $data);
 
     # minor version and flags
-    read($fh, $data, 2);
+    seek($fh, tell($fh) + 2, SEEK_SET);
 
     # header size
     my $header_end = tell($fh) + readId3Int($fh, 7, 4);
