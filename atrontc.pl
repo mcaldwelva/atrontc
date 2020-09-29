@@ -1,7 +1,9 @@
 #!/usr/bin/perl
 use File::Find;
 use File::Basename;
-use Encode qw( encode decode );
+use Encode qw(decode);
+use IO::Socket qw(AF_INET);
+use MIME::Base64;
 
 # file share root & music folder
 my $share = '/mnt/array1/pub';
@@ -18,7 +20,7 @@ my $toc = 'atrontc.vtc';
 
 
 # read ID3 string
-my @enc_types = qw( iso-8859-1 UTF-16 UTF-16BE utf8 );
+my @enc_types = qw(iso-8859-1 UTF-16 UTF-16BE utf8);
 sub readId3Str {
     my ($fh, $count) = @_;
 
@@ -52,7 +54,6 @@ sub readId3Int {
 # read ID3 tags
 sub readId3Tags {
     my ($file) = @_;
-
     my %tags = ( );
     my $data;
 
@@ -140,7 +141,6 @@ my $ASF_Content_Description_Object = "\x33\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x
 my $ASF_Extended_Content_Description_Object = "\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50";
 sub readAsfTags {
     my ($file) = @_;
-
     my %tags = ( );
     my $data;
 
@@ -194,7 +194,7 @@ sub readAsfTags {
             my $tag_count = unpack('v', $data);
 
             while ($tag_count-- > 0) {
-                #Descriptor Name Length
+                # Descriptor Name Length
                 read($fh, $data, 2);
                 my $name_size = unpack('v', $data);
 
@@ -302,6 +302,15 @@ sub gen_toc() {
     close(TOC);
 }
 
+# inform AudioTron of new TOC
+sub update_at() {
+    my $auth = encode_base64("$user:$pass");
+
+    my $sock = IO::Socket::INET->new("$host:80") or return;
+    $sock->send("GET /goform/CheckNewFilesForm HTTP/1.0\nAuthorization: Basic $auth\n\n");
+    $sock->close();
+}
+
 # look for changed files
 chdir $share;
 if ((! -e $toc) || `find $folder -newer $toc|wc -l` + 0) {
@@ -312,5 +321,5 @@ if ((! -e $toc) || `find $folder -newer $toc|wc -l` + 0) {
     utime $time, $time, $toc;
 
     # update AudioTron
-    `wget http://${host}/goform/CheckNewFilesForm --user=${user} --password=${pass} --quiet`
+    update_at();
 }
