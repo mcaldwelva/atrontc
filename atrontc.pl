@@ -242,6 +242,7 @@ sub find_music {
     # parse file name
     my($file, $dir, $ext) = fileparse(decode('UTF-8', $_), @file_types);
     return if $ext eq '';
+    return if $dir =~ m/\/@/;
 
     # create a new song
     my $key = $file . $ext . $dir;
